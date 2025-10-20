@@ -130,8 +130,8 @@ In a company view you can examine the company’s finances, compare data YoY
 (year-over-year), and simulate scenarios for desired prices or P/E ratios and
 the required net income.
 
-Abbreviations are used for data labels to simplify visualization. The data shown
-for each company is as follows:
+<details>
+<summary><strong>Abbreviations</strong> are used for data labels to simplify visualization.</summary>
 
 **Data that requires a stock price to calculate:**
 
@@ -174,6 +174,8 @@ for each company is as follows:
 - **CF<sub>inv</sub>** investment cash flow.
 - **CF<sub>fin</sub>**: financing cash flow.
 
+</details>
+
 If you’ve added the corresponding period from the previous year, the YoY
 variation is shown as a percentage next to each data point.
 
@@ -190,7 +192,13 @@ ratio.
   desired P/E ratio at that price and the percentage variation required compared
   to the current net profit will be shown.
 
-**Score** is determined as follows:
+If the period is 'Q' or 'S', for the upper 2 boxes, Intrinsic tries to perform
+the calculations based on TTM (trailing twelve months) data. If there is no data
+available (not submitted) just uses current data for that quarter or semester.
+
+<details>
+<summary><strong>Score
+</strong>is determined as follows:</summary>
 
 Base Conditions:
 
@@ -212,9 +220,7 @@ Weights:
 | All ratios available | 0.4         | 0.3      | 0.3       |
 | EV/OCF not available | –           | 0.5      | 0.5       |
 
-If the period is 'Q' or 'S', for the upper 2 boxes, Intrinsic tries to perform
-the calculations based on TTM (trailing twelve months) data. If there is no data
-available (not submitted) just uses current data for that quarter or semester.
+</details>
 
 ### Common Errors
 
