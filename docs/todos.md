@@ -3,7 +3,7 @@
 - Responsive UI.
 - Custom settings dropdown.
 - Testing.
-- Avoid node.js, git, npm requirements. Zip releases.
+- Avoid node.js, git, npm requirements. Improve builder and updater.
 - Allow different score formulas.
 - Support insurance companies and banks.
 - Improve cleaner readability and logic.

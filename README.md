@@ -30,6 +30,7 @@ git clone https://github.com/genbraham/intrinsic
 cd intrinsic
 npm install
 npm run build
+# optional →
 cd ..
 rm -rf intrinsic
 ```

@@ -22,7 +22,8 @@ import fsp from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { hasSecret, setSecret } from './utils/secrets.js';
 import { nuke } from './utils/nuke.js';
-import { getVersion, updateVersion } from './utils/version.js';
+import { getVersion } from './utils/version.js';
+import { updateVersion } from './utils/update.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -274,7 +275,18 @@ app.whenReady().then(async () => {
 
 	ipcMain.handle('app:getVersion', () => getVersion());
 
-	ipcMain.handle('app:updateVersion', () => updateVersion());
+	ipcMain.handle('app:updateVersion', async () => {
+		try {
+			await updateVersion();
+		} finally {
+			// Quit app after running update
+			setTimeout(() => {
+				try {
+					app.quit();
+				} catch {}
+			}, 300);
+		}
+	});
 
 	ipcMain.on('app:nuke', () => {
 		nuke({ db, closeDb, resetAI });
