@@ -17,7 +17,7 @@ contextBridge.exposeInMainWorld('api', {
 	app: {
 		shutdown: () => ipcRenderer.send('app:shutdown'),
 		getVersion: () => ipcRenderer.invoke('app:getVersion'),
-		updateVersion: () => ipcRenderer.invoke('app:getVersion'),
+		updateVersion: () => ipcRenderer.invoke('app:updateVersion'),
 		nuke: () => ipcRenderer.send('app:nuke'),
 	},
 
