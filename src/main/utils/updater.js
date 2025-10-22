@@ -14,6 +14,7 @@ function parseArgs(argv) {
 	return out;
 }
 
+// Ensure common system paths are in PATH for spawned processes
 function envWithBetterPath() {
 	const extra =
 		process.platform === 'darwin'
