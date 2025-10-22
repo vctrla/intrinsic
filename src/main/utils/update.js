@@ -46,7 +46,6 @@ export async function updateVersion() {
 	await run('npm', ['run', 'build'], repoDir);
 
 	console.log('[update] Cleaning up...');
-	console.log('debug');
 	try {
 		// Best-effort cleanup; ignore weird rimraf edge cases
 		fs.rmSync(tmpDir, { recursive: true, force: true });
