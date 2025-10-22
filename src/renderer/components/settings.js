@@ -6,6 +6,7 @@ import {
 	IconX,
 	IconCheck,
 	IconSliders,
+	IconSpinner,
 } from './styles/icons.js';
 import './lit-components/dialog.js';
 import { userDataStore } from './utils/user-data-store.js';
@@ -29,6 +30,8 @@ export class SettingsDialog extends LitElement {
 		sortOrder: { type: String },
 		localVersion: { type: String },
 		remoteVersion: { type: String },
+		updating: { type: Boolean },
+		updateErr: { type: Boolean },
 	};
 
 	constructor() {
@@ -48,6 +51,8 @@ export class SettingsDialog extends LitElement {
 		this.sortOrder = 'Desc';
 		this.localVersion = '';
 		this.remoteVersion = '';
+		this.updating = false;
+		this.updateErr = false;
 	}
 
 	connectedCallback() {
@@ -122,6 +127,12 @@ export class SettingsDialog extends LitElement {
 				width: 25px;
 				height: 25px;
 				display: inline-block;
+			}
+
+			.status-text {
+				font-weight: 400;
+				font-size: 15px;
+				letter-spacing: 1px;
 			}
 
 			.dialog-body {
@@ -299,6 +310,38 @@ export class SettingsDialog extends LitElement {
 		}
 	}
 
+	async doUpdate() {
+		this.updating = true;
+		this.updateErr = false;
+
+		const timeoutMs = 60_000;
+		const timeout = new Promise((resolve) =>
+			setTimeout(
+				() => resolve({ ok: false, error: 'Update timed out after 60s' }),
+				timeoutMs
+			)
+		);
+
+		try {
+			// Race backend call with timeout
+			const result = await Promise.race([
+				window.api.app.updateVersion(), // returns { ok, error? }
+				timeout,
+			]);
+
+			if (!result?.ok) throw new Error(result?.error || 'Update failed');
+
+			// If ok === true, backend quits + relaunches, so UI doesn’t matter
+		} catch (e) {
+			this.updating = false;
+			this.updateErr = true;
+			await new Promise((resolve) => {
+				setTimeout(resolve, 3000);
+			});
+			this.updateErr = false;
+		}
+	}
+
 	renderState() {
 		const t = labels[this.lang || 'EN'];
 
@@ -426,32 +469,41 @@ export class SettingsDialog extends LitElement {
 						${needsUpdate
 							? html`
 									<p>
-										${t.vNeedsUpdate}
-										${this.remoteVersion
-											? html`(<span>${this.remoteVersion}</span>)`
-											: ''}
+										${this.updating
+											? t.updatingMsg
+											: html`
+													${t.vNeedsUpdate}
+													${this.remoteVersion
+														? html`(<span>${this.remoteVersion}</span>)`
+														: ''}
+											  `}
 									</p>
-									<div class="horizontal-box">
-										<button
-											@click=${() => (this.stateView = 'default')}
-											title=${labels.cancel ?? 'Cancel'}
-										>
-											${IconX}
-										</button>
 
-										<button
-											@click=${async () => {
-												try {
-													await window.api.app.updateVersion();
-												} finally {
-													this.stateView = 'default';
-												}
-											}}
-											title=${labels.updateNow ?? 'Update'}
-										>
-											<span class="icon-wrap">${IconCheck}</span>
-										</button>
-									</div>
+									${this.updating || this.updateErr
+										? html`
+												<p>
+													${this.updateErr
+														? html`<svg width="20" height="20">${IconX}</svg>`
+														: t.updating}
+												</p>
+										  `
+										: html`
+												<div class="horizontal-box">
+													<button
+														@click=${() => (this.stateView = 'default')}
+														title=${labels.cancel ?? 'Cancel'}
+													>
+														${IconX}
+													</button>
+
+													<button
+														@click=${() => this.doUpdate()}
+														title=${labels.updateNow ?? 'Update'}
+													>
+														<span class="icon-wrap">${IconCheck}</span>
+													</button>
+												</div>
+										  `}
 							  `
 							: html`
 									<p>${t.vDoesntNeedUpdate} ${this.localVersion}</p>
@@ -537,6 +589,10 @@ export class SettingsDialog extends LitElement {
 			>
 				<div class="dialog-body">${this.renderState()}</div>
 			</dialog-component>
+
+			${this.updating
+				? html`<div id="ui-blocker" class="ui-blocker"></div>`
+				: null}
 		`;
 	}
 }

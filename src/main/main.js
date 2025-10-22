@@ -277,14 +277,21 @@ app.whenReady().then(async () => {
 
 	ipcMain.handle('app:updateVersion', async () => {
 		try {
-			await updateVersion();
-		} finally {
-			// Quit app after running update
+			await updateVersion(); // throws on failure
+
+			// Give file ops a brief moment to flush, then quit
 			setTimeout(() => {
 				try {
 					app.quit();
 				} catch {}
-			}, 300);
+			}, 500);
+
+			return { ok: true };
+		} catch (e) {
+			const msg = e?.message || String(e);
+			console.error('[update] failed:', msg);
+			dialog.showErrorBox('Update failed', msg);
+			return { ok: false, error: msg };
 		}
 	});
 

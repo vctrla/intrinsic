@@ -43,6 +43,8 @@ export const labels = {
 		nuke2: 'IRREVERSIBLE ACTION',
 		vNeedsUpdate: 'Update to',
 		vDoesntNeedUpdate: 'Using latest version',
+		updatingMsg: 'Upon completion re-open Intrinsic',
+		updating: 'Updating...',
 	},
 
 	ES: {
@@ -87,6 +89,8 @@ export const labels = {
 		nuke2: 'ACCIÓN IRREVERSIBLE',
 		vNeedsUpdate: 'Actualiza a',
 		vDoesntNeedUpdate: 'Usando última versión',
+		updatingMsg: 'Al completar vuelve a abrir Intrinsic',
+		updating: 'Actualizando...',
 	},
 };
 

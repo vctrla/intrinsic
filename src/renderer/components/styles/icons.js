@@ -158,6 +158,8 @@ export const iconStyles = css`
 	.spinner {
 		animation: spinner-rotate 1.2s linear infinite;
 		transform-origin: center center;
+		will-change: transform;
+		transform: translateZ(0);
 	}
 
 	@keyframes spinner-rotate {

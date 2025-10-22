@@ -33,6 +33,18 @@ export const globalStyles = css`
 		border: none;
 	}
 
+	.ui-blocker {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: transparent;
+		z-index: 9999;
+		cursor: default;
+		-webkit-app-region: drag;
+	}
+
 	button {
 		appearance: none;
 		height: 40px;

@@ -1,9 +1,10 @@
 ## To-dos
 
 - Responsive UI.
-- Custom settings dropdown.
+- Custom settings dropdown CSS.
 - Testing.
-- Avoid node.js, git, npm requirements. Improve builder and updater.
+- Updater: restart upong completion. Avoid node.js, git, npm toolchain
+  requirements.
 - Allow different score formulas.
 - Support insurance companies and banks.
 - Improve cleaner readability and logic.
