@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, clipboard } from 'electron';
 
 contextBridge.exposeInMainWorld('api', {
 	// DB
@@ -41,5 +41,11 @@ contextBridge.exposeInMainWorld('api', {
 	secrets: {
 		has: (name) => ipcRenderer.invoke('secrets:has', name),
 		set: (name, value) => ipcRenderer.invoke('secrets:set', { name, value }),
+	},
+
+	// Various
+	copyToClipboard: (text) => {
+		clipboard.writeText(text);
+		return true;
 	},
 });

@@ -8,7 +8,11 @@ import {
 	IconTrash,
 	IconArrow,
 	IconX,
+	IconCopy,
+	IconCheck,
 } from './styles/icons.js';
+import { normalizeMetrics, prettifyPeriodKey } from '../utils/copy-json.js';
+
 import {
 	getDerivedFields,
 	addChanges,
@@ -16,13 +20,14 @@ import {
 	priceForWhishedPer,
 	incomeForWishedPER,
 	calculateRatiosWithPrice,
+	renderChange,
 } from '../utils/calculations.js';
 import {
 	constraints,
 	validateEditedField,
 } from '../pipeline/postprocessor/postprocessor.js';
 import { getFinancesLabels, labels } from '../utils/labels.js';
-import { userDataStore } from './utils/user-data-store.js';
+import { userDataStore } from '../utils/user-data-store.js';
 
 export class Ticker extends LitElement {
 	static properties = {
@@ -39,6 +44,7 @@ export class Ticker extends LitElement {
 		invalid: { type: Boolean },
 		ttmAggregate: { type: Object },
 		ttm: { type: Boolean },
+		copied: { type: Boolean },
 	};
 
 	ttmFields = ['cash_flow_from_operations', 'eps', 'net_income'];
@@ -60,6 +66,7 @@ export class Ticker extends LitElement {
 		);
 		this.lang = 'EN';
 		this.ttm = true;
+		this.copied = false;
 	}
 
 	connectedCallback() {
@@ -151,11 +158,11 @@ export class Ticker extends LitElement {
 
 			.row sub {
 				display: inline-block;
-				line-height: 0;
-				vertical-align: baseline;
-				position: relative;
-				top: 0.25em;
-				margin: 0 2px;
+				line-height: 1;
+				vertical-align: sub;
+				position: static;
+				top: auto;
+				margin: 0 0;
 			}
 
 			.row p {
@@ -175,18 +182,54 @@ export class Ticker extends LitElement {
 				gap: 12px;
 			}
 
+			/* right-side cell: [ change ][ value ] */
 			.row p:last-child {
+				display: inline-flex;
+				align-items: baseline;
+				justify-content: flex-end;
 				white-space: nowrap;
 				overflow: hidden;
 				text-overflow: ellipsis;
 				text-align: right;
+				gap: 0; /* don't use gap for the spacing */
+				font-kerning: none; /* avoid kerning surprises between boxes */
 			}
 
-			/* reserve fixed space for the % change so it never shifts layout */
+			/* change: fixed slot, right-aligned */
 			.row p:last-child sub {
-				display: inline-block;
-				width: 6ch; /* fits like “-123.4%” */
+				flex: 0 0 12ch; /* fixed 12ch width to prevent layout shift */
+				min-width: 12ch;
+				max-width: 12ch;
 				text-align: right;
+				line-height: 1;
+				position: static;
+			}
+
+			/* value: owns remaining space and ellipsizes */
+			.row p:last-child .value {
+				min-width: 0;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+				padding-left: 2px;
+			}
+
+			.row p:last-child sub.label,
+			.row p:last-child sub.unit {
+				margin-left: 0;
+				display: inline;
+				position: relative;
+				top: 0.1em;
+			}
+
+			/* optional: slightly reduce vertical offset so labels sit closer */
+			.row sub.label,
+			.row sub.unit {
+				top: 0.15em;
+			}
+
+			.row p:last-child sub.unit {
+				top: 0.2em;
 			}
 
 			/* odd count -> single column */
@@ -241,18 +284,18 @@ export class Ticker extends LitElement {
 			}
 			.gray-text {
 				opacity: 0.3;
-				font-size: 8px;
+				font-size: 7px;
 			}
 			.green-text {
 				color: rgb(60, 189, 133);
-				font-size: 8px;
+				font-size: 7px;
 			}
 			.red-text {
 				color: rgb(255, 69, 118);
-				font-size: 8px;
+				font-size: 7px;
 			}
 			.label {
-				font-size: 8px;
+				font-size: 7px;
 			}
 
 			.input-box {
@@ -292,7 +335,7 @@ export class Ticker extends LitElement {
 			.field {
 				display: flex;
 				align-items: center;
-				width: 210px;
+				width: 220px;
 				gap: 10px;
 			}
 			form input {
@@ -495,6 +538,49 @@ export class Ticker extends LitElement {
 		}
 	}
 
+	copyJSON() {
+		try {
+			if (this.copied) return;
+
+			const dataToCopy = {};
+			const periodsDesc =
+				this.periods?.toReversed?.() ?? [...this.periods].reverse(); // no mutation
+
+			for (const period of periodsDesc) {
+				const baseData = Object.fromEntries(
+					Object.entries(this.data[period]).filter(
+						([k]) => !k.endsWith('_change')
+					)
+				);
+
+				let derivedRatios = calculateRatiosWithPrice(
+					this.price,
+					{ ...this.data[period] },
+					this.ttmAggregate
+				);
+
+				derivedRatios = Object.fromEntries(
+					Object.entries(derivedRatios).filter(([k]) => !k.endsWith('_change'))
+				);
+
+				const merged = { ...baseData, ...derivedRatios };
+				const normalized = normalizeMetrics(merged);
+
+				const prettyPeriod = prettifyPeriodKey(period);
+				dataToCopy[prettyPeriod] = normalized; // inserted in reversed order (recent first)
+			}
+
+			const jsonString = JSON.stringify(dataToCopy, null, 2);
+			if (window.api?.copyToClipboard) window.api.copyToClipboard(jsonString);
+			else navigator.clipboard.writeText(jsonString);
+
+			this.copied = true;
+			setTimeout(() => (this.copied = false), 300);
+		} catch (err) {
+			console.error('Failed to copy data:', err);
+		}
+	}
+
 	displayValue(field, format, data = this.data, grayChange = false) {
 		const locale = this.lang === 'ES' ? 'es-ES' : 'en-US';
 
@@ -510,26 +596,19 @@ export class Ticker extends LitElement {
 		const val = data[field];
 		const changeKey = field + '_change';
 		const change = data[changeKey];
-		let changeHTML = html`<sub class="gray-text">&nbsp;</sub>`;
+		let changeHTML = html`<sub class="change gray-text">&nbsp;</sub>`;
 
-		if (change) {
-			const changeFormatted = new Intl.NumberFormat(locale, {
-				minimumFractionDigits: 1,
-				maximumFractionDigits: 1,
-				useGrouping: true,
-			}).format(change);
+		if (change) changeHTML = renderChange(change, locale, grayChange);
 
-			let colorClass = 'gray-text';
-			if (!grayChange) {
-				if (change > 0) {
-					colorClass = 'green-text';
-				} else if (change < 0) {
-					colorClass = 'red-text';
-				}
-			}
-
-			changeHTML = html`<sub class="${colorClass}"> ${changeFormatted}%</sub>`;
-		}
+		const formatThousands = (num, fractionDigits = 0) => {
+			return (
+				new Intl.NumberFormat(locale, {
+					minimumFractionDigits: fractionDigits,
+					maximumFractionDigits: fractionDigits,
+					useGrouping: true,
+				}).format(num / 1_000) + 'K'
+			);
+		};
 
 		const formatMillions = (num, fractionDigits = 2) => {
 			return (
@@ -548,7 +627,27 @@ export class Ticker extends LitElement {
 				useGrouping: true,
 			}).format(val);
 			return html`<p>
-				${changeHTML}${formatted} <sub class="label gray-text">score</sub>
+				${changeHTML}<span class="value">${formatted}</span>
+				<sub class="label gray-text">score</sub>
+			</p>`;
+		}
+
+		if (field === 'cap') {
+			const formatted =
+				Math.abs(val) >= 1_000_000_000
+					? formatMillions(val, 0)
+					: Math.abs(val) >= 1_000_000
+					? formatMillions(val, 1)
+					: Math.abs(val) >= 1_000
+					? formatThousands(val, 0)
+					: new Intl.NumberFormat(locale, {
+							maximumFractionDigits: 0,
+							useGrouping: true,
+					  }).format(val);
+
+			return html`<p>
+				${changeHTML}<span class="value">${formatted}</span>
+				<sub class="label unit gray-text">cap</sub>
 			</p>`;
 		}
 
@@ -558,23 +657,38 @@ export class Ticker extends LitElement {
 				maximumFractionDigits: 2,
 				useGrouping: true,
 			}).format(val);
-			return html`<p>${changeHTML}${formatted}</p>`;
-		} else if (format === 'percent') {
+
+			return html`<p>${changeHTML}<span class="value">${formatted}</span></p>`;
+		} else if (format === 'percent-float') {
 			const formatted = new Intl.NumberFormat(locale, {
 				minimumFractionDigits: 2,
 				maximumFractionDigits: 2,
 				useGrouping: true,
-			}).format(val);
-			return html`<p>${changeHTML}${formatted}%</p>`;
+			}).format(val * 100);
+
+			return html`<p>${changeHTML}<span class="value">${formatted}%</span></p>`;
+		} else if (format === 'percent-int') {
+			const formatted = new Intl.NumberFormat(locale, {
+				minimumFractionDigits: 0,
+				maximumFractionDigits: 0,
+				useGrouping: true,
+			}).format(val * 100);
+
+			return html`<p>${changeHTML}<span class="value">${formatted}%</span></p>`;
 		} else {
 			const formatted =
-				Math.abs(val) > 999_999_999
+				Math.abs(val) >= 1_000_000_000
 					? formatMillions(val, 0)
+					: Math.abs(val) >= 1_000_000
+					? formatMillions(val, 1)
+					: Math.abs(val) >= 1_000
+					? formatThousands(val, 0)
 					: new Intl.NumberFormat(locale, {
 							maximumFractionDigits: 0,
 							useGrouping: true,
 					  }).format(val);
-			return html`<p>${changeHTML}${formatted}</p>`;
+
+			return html`<p>${changeHTML}<span class="value">${formatted}</span></p>`;
 		}
 	}
 
@@ -720,8 +834,15 @@ export class Ticker extends LitElement {
 					<svg width="20" height="20" class="rot-270">${IconArrow}</svg>
 				</button>
 				<h1>${this.ticker} ${this.period}</h1>
+
 				<button aria-label="Edit" @click=${this.handleDialog}>
 					<svg width="20" height="20">${IconEdit}</svg>
+				</button>
+
+				<button aria-label="Copy JSON" @click=${this.copyJSON}>
+					${this.copied
+						? html`<span class="icon-wrap">${IconCheck}</span>`
+						: html`<svg width="20" height="20">${IconCopy}</svg>`}
 				</button>
 
 				<button aria-label="Delete" @click=${this.handleDelete}>
@@ -777,7 +898,8 @@ export class Ticker extends LitElement {
 								}}
 							/>
 
-							${this.displayValue('score', 'float', this.derivedRatios, false)}
+							${this.displayValue('score', '', this.derivedRatios, false)}
+							${this.displayValue('cap', '', this.derivedRatios, false)}
 						</div>
 						<div class="row row-left-aligned">
 							<input

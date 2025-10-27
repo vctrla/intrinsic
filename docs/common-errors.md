@@ -66,14 +66,21 @@ formats used, the AI can be led to errors. Some of the most common errors are:
   of the data from 2023. Try to always use the same reports for that company,
   ideally their annual reports.
 
+- ❌ **Overly narrow page selection**. Due to inconsistencies in the files, page
+  detection may sometimes be inaccurate. Add 1–2 extra pages at the beginning
+  and at the end to give a margin in case the selection is misread.
+
 **Recommendations:**
 
-- ✅ Try to always send the same type of report for each company and preferably
-  consolidated reports. The more standardized and professional the report, the
-  easier it will be to correctly extract the information.
+- ✅ Try to always send the **same type of report** for each company and
+  preferably consolidated reports. The more standardized and professional the
+  report, the easier it will be to correctly extract the information.
 
-- ✅ Prefer annual reports, since dates and periods are usually more specific
-  and there’s less chance of using incorrect values.
+- ✅ Prefer **annual reports**, since dates and periods are usually more
+  specific and there’s less chance of using incorrect values.
+
+- ✅ When selecting pages, include **1–2 extra pages** before and after the main
+  section.
 
 - ✅ Remember you can manually modify values in the data display UI by clicking
   the **edit** icon.

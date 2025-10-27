@@ -7,7 +7,7 @@ import { globalStyles } from './styles/global-css.js';
 import { IconSpinner, iconStyles } from './styles/icons.js';
 import { labels } from '../utils/labels.js';
 import { applyAccent } from './styles/theme.js';
-import { userDataStore } from './utils/user-data-store.js';
+import { userDataStore } from '../utils/user-data-store.js';
 
 (async function bootstrap() {
 	const ud = await userDataStore.init();

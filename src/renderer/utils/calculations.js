@@ -63,7 +63,7 @@ export function getDerivedFields(data) {
 
 	const equity = safeSubstract(total_assets, total_liabilities);
 
-	const shares = safeDivide(data.net_income, data.eps);
+	const shares = Math.round(safeDivide(data.net_income, data.eps));
 
 	const working_capital = safeSubstract(
 		data.current_assets,
@@ -207,6 +207,7 @@ export function calculateRatiosWithPrice(price, data, ttm) {
 			score: null,
 			ev_cap: null,
 			ev_net_income: null,
+			cap: null,
 		};
 		return ratios;
 	}
@@ -291,6 +292,7 @@ export function calculateRatiosWithPrice(price, data, ttm) {
 		score,
 		ev_cap,
 		ev_net_income,
+		cap: marketCap,
 	};
 
 	for (const key in ratios) {
@@ -313,7 +315,7 @@ export function priceForWhishedPer(wishedPER, eps, ttmEps) {
 	if (ttmEps && ttmEps > 0) epsToUse = ttmEps;
 
 	return html`${Math.round(Number(wishedPER) * Number(epsToUse))}
-		<sub class="label gray-text">p needed</sub>`;
+		<sub class="label gray-text">p req.</sub>`;
 }
 
 export function incomeForWishedPER(
@@ -372,18 +374,40 @@ export function incomeForWishedPER(
 		})}`;
 	}
 
-	let changeHTML = '';
-	if (percentChange != null) {
-		if (percentChange > 0) {
-			changeHTML = html`<sub class="green-text">${percentChange}%</sub>`;
-		} else if (percentChange < 0) {
-			changeHTML = html`<sub class="red-text">${percentChange}%</sub>`;
-		} else {
-			changeHTML = html`<sub class="gray-text">${percentChange}%</sub>`;
-		}
-	}
+	const changeHTML =
+		percentChange != null ? renderChange(percentChange, locale) : '';
 
 	return html`<p>
-		${formattedValue}${changeHTML}<sub class="label gray-text"> π needed</sub>
+		${formattedValue}&nbsp;${changeHTML}&nbsp;<sub class="label gray-text">
+			π req.</sub
+		>
 	</p>`;
+}
+
+// simple display helper for % change
+export function renderChange(change, locale = 'en-US', grayChange = false) {
+	if (change == null || isNaN(change)) return '';
+
+	const absChange = Math.abs(change);
+	let displayText;
+
+	if (absChange >= 1000) {
+		const kValue = Math.round(absChange / 1000);
+		displayText = change > 0 ? `>${kValue}k%` : `<-${kValue}k%`;
+	} else {
+		const changeFormatted = new Intl.NumberFormat(locale, {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1,
+			useGrouping: true,
+		}).format(change);
+		displayText = `${changeFormatted}%`;
+	}
+
+	let colorClass = 'gray-text';
+	if (!grayChange) {
+		if (change > 0) colorClass = 'green-text';
+		else if (change < 0) colorClass = 'red-text';
+	}
+
+	return html`<sub class="change ${colorClass}">${displayText}</sub>`;
 }

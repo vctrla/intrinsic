@@ -168,7 +168,12 @@ export function getFinancesLabels(lang) {
 			format: 'int',
 			source: 'data',
 		},
-		{ label: t.wc_ncl, field: 'wc_ncl', format: 'float', source: 'data' },
+		{
+			label: t.wc_ncl,
+			field: 'wc_ncl',
+			format: 'percent-float',
+			source: 'data',
+		},
 		{ label: t.shares, field: 'shares', format: 'int', source: 'data' },
 		{
 			label: t.book_value,
@@ -183,15 +188,30 @@ export function getFinancesLabels(lang) {
 		{
 			label: t.net_margin,
 			field: 'net_margin',
-			format: 'percent',
+			format: 'percent-float',
 			source: 'data',
 		},
-		{ label: t.roa, field: 'roa', format: 'percent', source: 'data' },
-		{ label: t.roe, field: 'roe', format: 'percent', source: 'data' },
+		{ label: t.roa, field: 'roa', format: 'percent-float', source: 'data' },
+		{ label: t.roe, field: 'roe', format: 'percent-float', source: 'data' },
 
-		{ label: t.liquidity, field: 'liquidity', format: 'float', source: 'data' },
-		{ label: t.solvency, field: 'solvency', format: 'float', source: 'data' },
-		{ label: t.leverage, field: 'leverage', format: 'float', source: 'data' },
+		{
+			label: t.liquidity,
+			field: 'liquidity',
+			format: 'percent-int',
+			source: 'data',
+		},
+		{
+			label: t.solvency,
+			field: 'solvency',
+			format: 'percent-int',
+			source: 'data',
+		},
+		{
+			label: t.leverage,
+			field: 'leverage',
+			format: 'percent-int',
+			source: 'data',
+		},
 
 		{
 			label: t.cash_flow_from_operations,

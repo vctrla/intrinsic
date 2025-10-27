@@ -154,6 +154,19 @@ export const IconInput = svg`
   </g>
 </svg>`;
 
+export const IconCopy = svg`
+<svg width="20" height="20" viewBox="0 -2 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+ <defs>
+ <mask id="back-mask">
+ <rect width="24" height="24" fill="white"/>
+ <rect x="5" y="4" width="18" height="18" fill="black"/>
+ </mask>
+ </defs>
+ <rect x="2" y="1" width="14" height="14" rx="2" stroke="black" stroke-width="2" fill="none" mask="url(#back-mask)"/>
+ <rect x="6" y="5" width="16" height="16" rx="2" stroke="black" stroke-width="2" fill="none"/>
+</svg>
+`;
+
 export const iconStyles = css`
 	.spinner {
 		animation: spinner-rotate 1.2s linear infinite;

@@ -9,10 +9,10 @@ import {
 	IconSpinner,
 } from './styles/icons.js';
 import './lit-components/dialog.js';
-import { userDataStore } from './utils/user-data-store.js';
+import { userDataStore } from '../utils/user-data-store.js';
 import { ACCENT_PALETTE } from './styles/theme.js';
 import { labels } from '../utils/labels.js';
-import { AI_STRUCTURED_MODELS } from './utils/ai.js';
+import { AI_STRUCTURED_MODELS } from '../utils/ai.js';
 
 export class SettingsDialog extends LitElement {
 	static properties = {
@@ -123,11 +123,6 @@ export class SettingsDialog extends LitElement {
 				font-weight: 400;
 				letter-spacing: 1px;
 			}
-			.icon-wrap {
-				width: 25px;
-				height: 25px;
-				display: inline-block;
-			}
 
 			.status-text {
 				font-weight: 400;
@@ -144,12 +139,6 @@ export class SettingsDialog extends LitElement {
 				position: absolute;
 				top: 0.5rem;
 				left: 0.5rem;
-			}
-
-			.icon-wrap > svg {
-				width: 100% !important;
-				height: 100% !important;
-				display: block;
 			}
 
 			.horizontal-box {
@@ -321,8 +310,6 @@ export class SettingsDialog extends LitElement {
 				timeoutMs
 			)
 		);
-
-		console.log('debug: starting update process');
 
 		try {
 			// Race backend call with timeout

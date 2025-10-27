@@ -3,8 +3,9 @@
 - Responsive UI.
 - Custom settings dropdown CSS.
 - Testing.
-- Updater: restart upong completion. Avoid node.js, git, npm toolchain
-  requirements.
+- Spanish docs.
+- Updater: restart upong completion. Avoid node.js, git, npm, toolchain
+  requirements, signing and quarantine.
 - Allow different score formulas.
 - Support insurance companies and banks.
 - Improve cleaner readability and logic.

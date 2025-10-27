@@ -45,6 +45,18 @@ export const globalStyles = css`
 		-webkit-app-region: drag;
 	}
 
+	.icon-wrap {
+		width: 25px;
+		height: 25px;
+		display: inline-block;
+	}
+
+	.icon-wrap > svg {
+		width: 100% !important;
+		height: 100% !important;
+		display: block;
+	}
+
 	button {
 		appearance: none;
 		height: 40px;

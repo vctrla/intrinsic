@@ -123,8 +123,12 @@ content are crucial for correct extraction. The AI can make mistakes. After
 adding a company, if you detect any error you can manually modify values in the
 data display UI by clicking the **edit** icon.
 
-You can **delete** specific periods. To delete a company, delete all its periods
-from within the company view.
+You can **copy** to the clipboard the company data in JSON format pressing on
+the copy button. Remember to add a price if you want to copy price-related
+fields also.
+
+Press **delete** to remove specific periods. To delete a company, delete all its
+periods from within the company view.
 
 ### Data displayed
 

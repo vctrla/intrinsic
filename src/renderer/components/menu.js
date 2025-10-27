@@ -12,7 +12,7 @@ import { globalStyles } from './styles/global-css.js';
 import { labels } from '../utils/labels.js';
 import './lit-components/dialog.js';
 import './settings.js';
-import { userDataStore } from './utils/user-data-store.js';
+import { userDataStore } from '../utils/user-data-store.js';
 
 export class Menu extends LitElement {
 	static properties = {
