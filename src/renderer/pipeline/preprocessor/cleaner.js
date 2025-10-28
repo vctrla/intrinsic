@@ -266,10 +266,6 @@ export function cleanChunk(target, chunk, period) {
 		processedText = januaryRemoved;
 	}
 
-	if (target == 'balance') {
-		console.log('2: ', processedText);
-	}
-
 	// *
 	// **
 	// ***

@@ -1,8 +1,8 @@
 # Intrinsic
 
-Intrinsic is a Javascript Electron-based desktop app that processes financial
-reports, extracts and stores key metrics, and helps you quickly analyze
-companies and track their finances.
+Intrinsic is an desktop app that processes financial reports, extracts and
+stores key metrics, and helps you quickly analyze companies and track their
+finances.
 
 <p align="center">
   <img src="intrinsic_img.png" alt="Intrinsic desktop ui" width="800"/>
