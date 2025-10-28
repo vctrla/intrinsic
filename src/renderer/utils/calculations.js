@@ -314,6 +314,8 @@ export function priceForWhishedPer(wishedPER, eps, ttmEps) {
 	let epsToUse = eps;
 	if (ttmEps && ttmEps > 0) epsToUse = ttmEps;
 
+	if (eps <= 0) return html`<p class="na">NA</p>`;
+
 	return html`${Math.round(Number(wishedPER) * Number(epsToUse))}
 		<sub class="label gray-text">p req.</sub>`;
 }
@@ -353,12 +355,22 @@ export function incomeForWishedPER(
 	const requiredEPS = priceNumber / wishedPERNumber;
 	const requiredNetIncome = Math.round(requiredEPS * sharesNumber);
 
-	const percentChange = netIncomeNumber
-		? Math.round(
-				((requiredNetIncome - netIncomeNumber) / Math.abs(netIncomeNumber)) *
-					1000
-		  ) / 10
-		: null;
+	let percentChange = null;
+	if (netIncomeNumber) {
+		if (netIncomeNumber < 0 && requiredNetIncome > 0) {
+			// Turnaround scenario: measure the swing vs the positive target, not the loss magnitude
+			percentChange =
+				Math.round(
+					((requiredNetIncome - netIncomeNumber) / requiredNetIncome) * 1000
+				) / 10;
+		} else {
+			percentChange =
+				Math.round(
+					((requiredNetIncome - netIncomeNumber) / Math.abs(netIncomeNumber)) *
+						1000
+				) / 10;
+		}
+	}
 
 	let formattedValue;
 	if (requiredNetIncome >= 1000000) {
@@ -378,7 +390,7 @@ export function incomeForWishedPER(
 		percentChange != null ? renderChange(percentChange, locale) : '';
 
 	return html`<p>
-		${formattedValue}&nbsp;${changeHTML}&nbsp;<sub class="label gray-text">
+		${formattedValue}&nbsp;${changeHTML}<sub class="label gray-text">
 			π req.</sub
 		>
 	</p>`;
@@ -409,5 +421,5 @@ export function renderChange(change, locale = 'en-US', grayChange = false) {
 		else if (change < 0) colorClass = 'red-text';
 	}
 
-	return html`<sub class="change ${colorClass}">${displayText}</sub>`;
+	return html`<sub class="change-derived ${colorClass}">${displayText}</sub>`;
 }

@@ -191,7 +191,7 @@ async function runAIPipe(c, cleanedChunk, target, period, template) {
 		period
 	);
 
-	fileWriter(target + '_submitter', submitterPrompt, false);
+	fileWriter(target.toLowerCase() + '_submitter', submitterPrompt, false);
 
 	const schema = buildOpenAISchema(template, cleanedChunk.units);
 

@@ -161,7 +161,6 @@ export class Ticker extends LitElement {
 			.row {
 				display: flex;
 				justify-content: space-between;
-				font-size: 12px;
 				cursor: default;
 				align-items: center;
 				letter-spacing: 1px;
@@ -184,6 +183,7 @@ export class Ticker extends LitElement {
 				text-overflow: ellipsis;
 				max-width: 100%;
 				min-width: 0;
+				/* font-size: 14px; */
 			}
 
 			.row,
@@ -201,6 +201,7 @@ export class Ticker extends LitElement {
 				overflow: hidden;
 				text-overflow: ellipsis;
 				white-space: nowrap;
+				/* font-size: 13px; // slightly smaller for labels */
 			}
 
 			/* right-side cell: [ change ][ value ] */
@@ -215,7 +216,7 @@ export class Ticker extends LitElement {
 			}
 
 			/* change: fixed slot, right-aligned */
-			.row p:last-child sub {
+			.row p:last-child sub.change {
 				flex: 0 0 12ch; /* fixed 12ch width to prevent layout shift */
 				min-width: 12ch;
 				max-width: 12ch;
@@ -408,7 +409,22 @@ export class Ticker extends LitElement {
 	}
 
 	get financesLabels() {
-		return getFinancesLabels(this.lang || 'EN');
+		const lang = this.lang || 'EN';
+		if (this._labelsCache.lang !== lang) {
+			const all = getFinancesLabels(lang);
+			this._labelsCache = {
+				lang,
+				all,
+				sections: [
+					all.slice(0, 6),
+					all.slice(6, 18),
+					all.slice(18, 24),
+					all.slice(24, 27),
+					all.slice(27, 30),
+				],
+			};
+		}
+		return this._labelsCache.all;
 	}
 
 	applyPeriodFilter() {
@@ -419,7 +435,7 @@ export class Ticker extends LitElement {
 		// ensure there is always something
 		this.periods = next;
 
-		// If current period no longer exists -> pick best fallback
+		// current period no longer exists -> pick best fallback
 		if (!this.periods.includes(this.period)) {
 			const prev = this.period;
 			const prevYear = prev ? prev.slice(0, 4) : null;
@@ -440,6 +456,7 @@ export class Ticker extends LitElement {
 	};
 
 	periodsForTTM() {
+		if (!this.period) return [];
 		const year = parseInt(this.period.slice(0, 4), 10);
 		const kind = this.period.slice(5, 6);
 		const num = parseInt(this.period.slice(6), 10);
@@ -637,8 +654,52 @@ export class Ticker extends LitElement {
 		}
 	}
 
+	_fmt = {}; // locale -> formatters
+	_labelsCache = { lang: null, all: null, sections: null };
+	_priceRAF = null;
+	_wperRAF = null;
+
+	_getFormatters(locale) {
+		let f = this._fmt[locale];
+		if (f) return f;
+		f = this._fmt[locale] = {
+			int0: new Intl.NumberFormat(locale, {
+				maximumFractionDigits: 0,
+				useGrouping: true,
+			}),
+			float1: new Intl.NumberFormat(locale, {
+				minimumFractionDigits: 1,
+				maximumFractionDigits: 1,
+				useGrouping: true,
+			}),
+			float2: new Intl.NumberFormat(locale, {
+				minimumFractionDigits: 2,
+				maximumFractionDigits: 2,
+				useGrouping: true,
+			}),
+			percent2: new Intl.NumberFormat(locale, {
+				minimumFractionDigits: 2,
+				maximumFractionDigits: 2,
+				useGrouping: true,
+			}),
+			percent0: new Intl.NumberFormat(locale, {
+				maximumFractionDigits: 0,
+				useGrouping: true,
+			}),
+		};
+		return f;
+	}
+
+	_formatThousands(num, nf) {
+		return nf.format(num / 1_000) + 'K';
+	}
+	_formatMillions(num, nf) {
+		return nf.format(num / 1_000_000) + 'M';
+	}
+
 	displayValue(field, format, data = this.data, grayChange = false) {
 		const locale = this.lang === 'ES' ? 'es-ES' : 'en-US';
+		const F = this._getFormatters(locale);
 
 		if (
 			!data ||
@@ -653,123 +714,144 @@ export class Ticker extends LitElement {
 		const changeKey = field + '_change';
 		const change = data[changeKey];
 		let changeHTML = html`<sub class="change gray-text">&nbsp;</sub>`;
-
 		if (change) changeHTML = renderChange(change, locale, grayChange);
 
-		const formatThousands = (num, fractionDigits = 0) => {
-			return (
-				new Intl.NumberFormat(locale, {
-					minimumFractionDigits: fractionDigits,
-					maximumFractionDigits: fractionDigits,
-					useGrouping: true,
-				}).format(num / 1_000) + 'K'
-			);
-		};
-
-		const formatMillions = (num, fractionDigits = 2) => {
-			return (
-				new Intl.NumberFormat(locale, {
-					minimumFractionDigits: fractionDigits,
-					maximumFractionDigits: fractionDigits,
-					useGrouping: true,
-				}).format(num / 1_000_000) + 'M'
-			);
-		};
-
+		// score: fixed 2 decimals
 		if (field === 'score') {
-			const formatted = new Intl.NumberFormat(locale, {
-				minimumFractionDigits: 2,
-				maximumFractionDigits: 2,
-				useGrouping: true,
-			}).format(val);
+			const formatted = F.float2.format(val);
 			return html`<p>
 				${changeHTML}<span class="value">${formatted}</span>
 				<sub class="label gray-text">score</sub>
 			</p>`;
 		}
 
+		// cap with K/M shorthands
 		if (field === 'cap') {
+			const abs = Math.abs(val);
 			const formatted =
-				Math.abs(val) >= 1_000_000_000
-					? formatMillions(val, 0)
-					: Math.abs(val) >= 1_000_000
-					? formatMillions(val, 1)
-					: Math.abs(val) >= 1_000
-					? formatThousands(val, 0)
-					: new Intl.NumberFormat(locale, {
-							maximumFractionDigits: 0,
-							useGrouping: true,
-					  }).format(val);
+				abs >= 1_000_000_000
+					? this._formatMillions(val, F.int0)
+					: abs >= 1_000_000
+					? this._formatMillions(val, F.float1)
+					: abs >= 1_000
+					? this._formatThousands(val, F.int0)
+					: F.int0.format(val);
 
 			return html`<p>
-				${changeHTML}<span class="value">${formatted}</span>
-				<sub class="label unit gray-text">cap</sub>
+				${changeHTML}<span class="value">${formatted}</span>&nbsp;
+				<sub class="gray-text">cap</sub>
 			</p>`;
 		}
 
+		// explicit formats
 		if (format === 'float') {
-			const formatted = new Intl.NumberFormat(locale, {
-				minimumFractionDigits: 2,
-				maximumFractionDigits: 2,
-				useGrouping: true,
-			}).format(val);
-
-			return html`<p>${changeHTML}<span class="value">${formatted}</span></p>`;
+			return html`<p>
+				${changeHTML}<span class="value">${F.float2.format(val)}</span>
+			</p>`;
 		} else if (format === 'percent-float') {
-			const formatted = new Intl.NumberFormat(locale, {
-				minimumFractionDigits: 2,
-				maximumFractionDigits: 2,
-				useGrouping: true,
-			}).format(val * 100);
-
-			return html`<p>${changeHTML}<span class="value">${formatted}%</span></p>`;
+			return html`<p>
+				${changeHTML}<span class="value">${F.percent2.format(val * 100)}%</span>
+			</p>`;
 		} else if (format === 'percent-int') {
-			const formatted = new Intl.NumberFormat(locale, {
-				minimumFractionDigits: 0,
-				maximumFractionDigits: 0,
-				useGrouping: true,
-			}).format(val * 100);
-
-			return html`<p>${changeHTML}<span class="value">${formatted}%</span></p>`;
-		} else {
-			const formatted =
-				Math.abs(val) >= 1_000_000_000
-					? formatMillions(val, 0)
-					: Math.abs(val) >= 1_000_000
-					? formatMillions(val, 1)
-					: Math.abs(val) >= 1_000
-					? formatThousands(val, 0)
-					: new Intl.NumberFormat(locale, {
-							maximumFractionDigits: 0,
-							useGrouping: true,
-					  }).format(val);
-
-			return html`<p>${changeHTML}<span class="value">${formatted}</span></p>`;
+			return html`<p>
+				${changeHTML}<span class="value">${F.percent0.format(val * 100)}%</span>
+			</p>`;
 		}
+
+		// default number w/ K/M
+		const abs = Math.abs(val);
+		const formatted =
+			abs >= 1_000_000_000
+				? this._formatMillions(val, F.int0)
+				: abs >= 1_000_000
+				? this._formatMillions(val, F.float2)
+				: abs >= 1_000
+				? this._formatThousands(val, F.int0)
+				: F.int0.format(val);
+
+		return html`<p>${changeHTML}<span class="value">${formatted}</span></p>`;
 	}
 
 	get derivedRatios() {
-		let derivedRatios = calculateRatiosWithPrice(
-			this.price,
-			{ ...this.data[this.period] }, // create shallow copy to avoid mutations
-			this.ttmAggregate
-		);
-		let prevDerivedRatios;
-
-		const [year, period] = this.period.split('-');
-		const prevPeriod = `${+year - 1}-${period}`;
-		if (!this.data[prevPeriod]) {
-			return derivedRatios;
+		if (!this.period || !this.data || !this.data[this.period]) {
+			return {};
 		}
 
-		prevDerivedRatios = calculateRatiosWithPrice(
+		const current = calculateRatiosWithPrice(
 			this.price,
-			{ ...this.data[prevPeriod] }, // shallow copy
+			{ ...this.data[this.period] },
 			this.ttmAggregate
 		);
 
-		return addRatiosChange(derivedRatios, prevDerivedRatios);
+		const parts = this.period.split('-');
+		if (parts.length !== 2) return current;
+
+		const [yearStr, kind] = parts;
+		const prevPeriod = `${Number(yearStr) - 1}-${kind}`;
+
+		if (!this.data[prevPeriod]) return current;
+
+		const prev = calculateRatiosWithPrice(
+			this.price,
+			{ ...this.data[prevPeriod] },
+			this.ttmAggregate
+		);
+
+		return addRatiosChange(current, prev);
 	}
+
+	_onBack = () => {
+		this.dispatchEvent(
+			new CustomEvent('close', { bubbles: true, composed: true })
+		);
+	};
+
+	_onToggleYearly = () => {
+		this.filterYearly();
+	};
+
+	_onPrev = () => {
+		const i = this.periods.indexOf(this.period);
+		if (i > 0) this.period = this.periods[i - 1];
+	};
+
+	_onNext = () => {
+		const i = this.periods.indexOf(this.period);
+		if (i >= 0 && i < this.periods.length - 1)
+			this.period = this.periods[i + 1];
+	};
+
+	_onPriceInput = (e) => {
+		let v = e.target.value;
+
+		v = v.replace(/[^0-9.]/g, '');
+		const parts = v.split('.');
+		if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+
+		const digitsOnly = v.replace(/\D/g, '');
+		if (digitsOnly.length > 5) {
+			let count = 0;
+			v = v
+				.split('')
+				.filter((ch) => (/\d/.test(ch) ? count++ < 5 : ch === '.'))
+				.join('');
+		}
+
+		e.target.value = v;
+		cancelAnimationFrame(this._priceRAF);
+		this._priceRAF = requestAnimationFrame(() => {
+			this.price = v;
+		});
+	};
+
+	_onWishedPerInput = (e) => {
+		let v = e.target.value.replace(/[^0-9]/g, '').slice(0, 3);
+		e.target.value = v;
+		cancelAnimationFrame(this._wperRAF);
+		this._wperRAF = requestAnimationFrame(() => {
+			this.wishedPer = v;
+		});
+	};
 
 	renderEditableFields() {
 		return html`
@@ -848,7 +930,7 @@ export class Ticker extends LitElement {
 		`;
 	}
 
-	renderBox(slice) {
+	renderBox(slice, derived = this.derivedRatios) {
 		const isOdd = slice.length % 2 !== 0;
 		return html`
 			<div class="box ${isOdd ? 'single-col' : 'two-col'}">
@@ -859,9 +941,7 @@ export class Ticker extends LitElement {
 							${this.displayValue(
 								r.field,
 								r.format,
-								r.source === 'derivedRatios'
-									? this.derivedRatios
-									: this.data[this.period],
+								r.source === 'derivedRatios' ? derived : this.data[this.period],
 								r.source === 'derivedRatios' ? true : false
 							)}
 						</div>
@@ -872,23 +952,21 @@ export class Ticker extends LitElement {
 	}
 
 	render() {
-		const t = labels[this.lang || 'EN'];
-
 		if (this.loading) {
 			return html` <div>${IconSpinner}</div>`;
 		}
 
+		const t = labels[this.lang || 'EN'];
+		const derived = this.derivedRatios;
+		this.financesLabels;
+		const sections = this._labelsCache.sections;
+
 		return html`
 			<div class="ui-container">
-				<button
-					aria-label="Back"
-					@click=${() =>
-						this.dispatchEvent(
-							new CustomEvent('close', { bubbles: true, composed: true })
-						)}
-				>
+				<button aria-label="Back" @click=${this._onBack}>
 					<svg width="20" height="20" class="rot-270">${IconArrow}</svg>
 				</button>
+
 				<h1>${this.ticker} ${this.period}</h1>
 
 				<button aria-label="Edit" @click=${this.handleDialog}>
@@ -898,7 +976,7 @@ export class Ticker extends LitElement {
 				<button
 					aria-label="Yearly only"
 					class=${!this.showYearlyOnly ? 'inactive' : ''}
-					@click=${this.filterYearly}
+					@click=${this._onToggleYearly}
 				>
 					<span>Y</span>
 				</button>
@@ -917,8 +995,8 @@ export class Ticker extends LitElement {
 			<div class="boxes-layout">
 				<!-- Left side -->
 				<div class="left">
-					${this.renderBox(this.financesLabels.slice(0, 6))}
-					${this.renderBox(this.financesLabels.slice(6, 18))}
+					${this.renderBox(sections[0], derived)}
+					${this.renderBox(sections[1], derived)}
 				</div>
 
 				<!-- Right side -->
@@ -930,58 +1008,22 @@ export class Ticker extends LitElement {
 								type="text"
 								.placeholder=${t.price}
 								.value=${this.price ?? ''}
-								@input=${(e) => {
-									let v = e.target.value;
-
-									v = v.replace(/[^0-9.]/g, '');
-									const parts = v.split('.');
-									if (parts.length > 2) {
-										v = parts[0] + '.' + parts.slice(1).join('');
-									}
-
-									const digitsOnly = v.replace(/\D/g, '');
-									if (digitsOnly.length > 5) {
-										let count = 0;
-										v = v
-											.split('')
-											.filter((ch) => {
-												if (/\d/.test(ch)) {
-													if (count < 5) {
-														count++;
-														return true;
-													}
-													return false;
-												}
-												return ch === '.';
-											})
-											.join('');
-									}
-
-									e.target.value = v;
-									this.price = v;
-								}}
+								@input=${this._onPriceInput}
 							/>
 
-							${this.displayValue('score', '', this.derivedRatios, false)}
-							${this.displayValue('cap', '', this.derivedRatios, false)}
+							${this.displayValue('score', '', derived, false)}
+							${this.displayValue('cap', '', derived, false)}
 						</div>
+
 						<div class="row row-left-aligned">
 							<input
 								id="wishedper"
 								type="text"
 								placeholder="w  P / E"
 								.value=${this.wishedPer ?? ''}
-								@input=${(e) => {
-									let v = e.target.value;
-
-									v = v.replace(/[^0-9]/g, '');
-
-									v = v.slice(0, 3);
-
-									e.target.value = v;
-									this.wishedPer = v;
-								}}
+								@input=${this._onWishedPerInput}
 							/>
+
 							<p>
 								${priceForWhishedPer(
 									this.wishedPer,
@@ -989,6 +1031,7 @@ export class Ticker extends LitElement {
 									this.ttmAggregate.eps
 								)}
 							</p>
+
 							<p>
 								${incomeForWishedPER(
 									this.price,
@@ -1002,11 +1045,11 @@ export class Ticker extends LitElement {
 						</div>
 					</div>
 
-					${this.renderBox(this.financesLabels.slice(18, 24))}
+					${this.renderBox(sections[2], derived)}
 
 					<div class="row-boxes">
-						${this.renderBox(this.financesLabels.slice(24, 27))}
-						${this.renderBox(this.financesLabels.slice(27, 30))}
+						${this.renderBox(sections[3], derived)}
+						${this.renderBox(sections[4], derived)}
 					</div>
 				</div>
 			</div>
@@ -1030,10 +1073,8 @@ export class Ticker extends LitElement {
 			<navigation-component
 				.currentPage=${this.periods.indexOf(this.period)}
 				.totalPages=${this.periods.length}
-				@prev=${() =>
-					(this.period = this.periods[this.periods.indexOf(this.period) - 1])}
-				@next=${() =>
-					(this.period = this.periods[this.periods.indexOf(this.period) + 1])}
+				@prev=${this._onPrev}
+				@next=${this._onNext}
 			></navigation-component>
 		`;
 	}
