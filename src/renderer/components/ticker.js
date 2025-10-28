@@ -33,9 +33,10 @@ export class Ticker extends LitElement {
 	static properties = {
 		ticker: { type: String },
 		lang: { type: String },
+		allPeriods: { type: Array },
+		periods: { type: Array },
 		period: { type: String },
 		data: { type: Object },
-		periods: { type: Array },
 		loading: { type: Boolean },
 		price: { type: String },
 		wishedPer: { type: String },
@@ -45,6 +46,7 @@ export class Ticker extends LitElement {
 		ttmAggregate: { type: Object },
 		ttm: { type: Boolean },
 		copied: { type: Boolean },
+		showYearlyOnly: { type: Boolean },
 	};
 
 	ttmFields = ['cash_flow_from_operations', 'eps', 'net_income'];
@@ -53,6 +55,7 @@ export class Ticker extends LitElement {
 		super();
 		this.ticker = null;
 		this.data = {};
+		this.allPeriods = [];
 		this.periods = [];
 		this.period = null;
 		this.loading = true;
@@ -67,6 +70,7 @@ export class Ticker extends LitElement {
 		this.lang = 'EN';
 		this.ttm = true;
 		this.copied = false;
+		this.showYearlyOnly = false;
 	}
 
 	connectedCallback() {
@@ -124,13 +128,19 @@ export class Ticker extends LitElement {
 			}
 
 			.boxes-layout {
+				/* Prevent columns from overgrowing the viewport */
+				width: min(100%, 85vw);
+				/* Add sensible cap so each column */
+				max-width: 1000px;
+				margin: 0 auto;
+
 				display: grid;
-				grid-template-columns: 1fr 1fr;
+				grid-template-columns: repeat(
+					2,
+					minmax(0, 1fr)
+				); /* equal, shrinkable */
 				gap: 16px;
 				box-sizing: border-box;
-				padding: 0;
-				width: 85%;
-				margin: 0 auto;
 			}
 
 			.box {
@@ -143,6 +153,8 @@ export class Ticker extends LitElement {
 				z-index: 10;
 				padding: 15px;
 				cursor: default;
+				max-width: 100%;
+				overflow: hidden;
 			}
 
 			/* default row style */
@@ -154,6 +166,7 @@ export class Ticker extends LitElement {
 				align-items: center;
 				letter-spacing: 1px;
 				height: 19px;
+				min-width: 0;
 			}
 
 			.row sub {
@@ -170,6 +183,7 @@ export class Ticker extends LitElement {
 				overflow: hidden;
 				text-overflow: ellipsis;
 				max-width: 100%;
+				min-width: 0;
 			}
 
 			.row,
@@ -182,17 +196,22 @@ export class Ticker extends LitElement {
 				gap: 12px;
 			}
 
+			.row > p:first-child {
+				min-width: 0;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
 			/* right-side cell: [ change ][ value ] */
-			.row p:last-child {
+			.row > p:last-child {
+				flex: 0 0 auto;
 				display: inline-flex;
 				align-items: baseline;
 				justify-content: flex-end;
 				white-space: nowrap;
 				overflow: hidden;
 				text-overflow: ellipsis;
-				text-align: right;
-				gap: 0; /* don't use gap for the spacing */
-				font-kerning: none; /* avoid kerning surprises between boxes */
 			}
 
 			/* change: fixed slot, right-aligned */
@@ -220,12 +239,6 @@ export class Ticker extends LitElement {
 				display: inline;
 				position: relative;
 				top: 0.1em;
-			}
-
-			/* optional: slightly reduce vertical offset so labels sit closer */
-			.row sub.label,
-			.row sub.unit {
-				top: 0.15em;
 			}
 
 			.row p:last-child sub.unit {
@@ -271,6 +284,7 @@ export class Ticker extends LitElement {
 				display: flex;
 				flex-direction: column;
 				gap: 16px;
+				min-width: 0;
 			}
 
 			.row-boxes {
@@ -341,6 +355,13 @@ export class Ticker extends LitElement {
 			form input {
 				width: 100%;
 			}
+			button.inactive span {
+				opacity: 0.3;
+			}
+
+			button span {
+				font-weight: 500;
+			}
 		`,
 	];
 
@@ -349,16 +370,23 @@ export class Ticker extends LitElement {
 			const rows = await window.api.getTicker(this.ticker);
 			if (!rows || rows.length === 0) {
 				this.data = {};
+				this.allPeriods = [];
 				this.periods = [];
 				this.period = null;
 				return;
 			}
+
 			this.data = this.buildObj(rows);
-			this.periods = Object.keys(this.data);
-			this.period = this.periods[this.periods.length - 1];
+
+			this.allPeriods = Object.keys(this.data);
+			this.period = this.allPeriods[this.allPeriods.length - 1];
+
+			// produce this.periods
+			this.applyPeriodFilter();
 		} catch (err) {
 			console.error('Failed to load ticker:', err);
 			this.data = {};
+			this.allPeriods = [];
 			this.periods = [];
 			this.period = null;
 		} finally {
@@ -382,6 +410,34 @@ export class Ticker extends LitElement {
 	get financesLabels() {
 		return getFinancesLabels(this.lang || 'EN');
 	}
+
+	applyPeriodFilter() {
+		const next = this.showYearlyOnly
+			? this.allPeriods.filter((p) => /^\d{4}-Y$/.test(p)) // yearly only
+			: [...this.allPeriods];
+
+		// ensure there is always something
+		this.periods = next;
+
+		// If current period no longer exists -> pick best fallback
+		if (!this.periods.includes(this.period)) {
+			const prev = this.period;
+			const prevYear = prev ? prev.slice(0, 4) : null;
+			const sameYearAnnual = prevYear ? `${prevYear}-Y` : null;
+
+			if (sameYearAnnual && this.periods.includes(sameYearAnnual)) {
+				this.period = sameYearAnnual;
+			} else {
+				// default to the latest available in whatever order we keep
+				this.period = this.periods[this.periods.length - 1] ?? null;
+			}
+		}
+	}
+
+	filterYearly = () => {
+		this.showYearlyOnly = !this.showYearlyOnly;
+		this.applyPeriodFilter();
+	};
 
 	periodsForTTM() {
 		const year = parseInt(this.period.slice(0, 4), 10);
@@ -837,6 +893,14 @@ export class Ticker extends LitElement {
 
 				<button aria-label="Edit" @click=${this.handleDialog}>
 					<svg width="20" height="20">${IconEdit}</svg>
+				</button>
+
+				<button
+					aria-label="Yearly only"
+					class=${!this.showYearlyOnly ? 'inactive' : ''}
+					@click=${this.filterYearly}
+				>
+					<span>Y</span>
 				</button>
 
 				<button aria-label="Copy JSON" @click=${this.copyJSON}>

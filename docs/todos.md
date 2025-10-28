@@ -4,8 +4,8 @@
 - Custom settings dropdown CSS.
 - Testing.
 - Spanish docs.
-- Updater: restart upong completion. Avoid node.js, git, npm, toolchain
-  requirements, signing and quarantine.
+- Updater: restart upong completion. Avoid: node.js, git, npm, toolchain,
+  signing and quarantine.
 - Allow different score formulas.
 - Support insurance companies and banks.
 - Improve cleaner readability and logic.
