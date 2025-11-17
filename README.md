@@ -26,7 +26,7 @@ giving you a clear, data-driven view of businesses you’re evaluating.
 ### Install
 
 ```sh
-git clone https://github.com/genbraham/intrinsic
+git clone https://github.com/vctrla/intrinsic
 cd intrinsic
 npm install
 npm run build

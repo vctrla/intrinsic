@@ -114,7 +114,7 @@ app.whenReady().then(async () => {
 	const prefs = loadUserData({
 		// defaults on first run:
 		lang: 'EN',
-		accent: 'rgba(65, 102, 245, 0.3)',
+		accent: 'rgba(255, 255, 255, 0.3)',
 		ttm: true,
 		sortBy: 'Sub',
 		sortOrder: 'Desc',

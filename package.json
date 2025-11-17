@@ -13,7 +13,7 @@
 		"build": "node scripts/pack.js"
 	},
 	"type": "module",
-	"author": "github.com/genbraham",
+	"author": "github.com/vctrla",
 	"license": "MIT",
 	"dependencies": {
 		"better-sqlite3": "^12.2.0",

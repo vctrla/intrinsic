@@ -43,7 +43,7 @@ const opts = {
 	arch,
 	appVersion: process.env.npm_package_version,
 	icon: path.join(__dirname, '..', iconPath),
-	appBundleId: 'com.genbraham.intrinsic',
+	appBundleId: 'com.vctrla.intrinsic',
 	ignore: [
 		/^\/\.git/,
 		/^\/\.github/,

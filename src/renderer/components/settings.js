@@ -40,7 +40,7 @@ export class SettingsDialog extends LitElement {
 		this.stateView = 'default';
 		this.lang = 'EN';
 		this.ttm = true;
-		this.accent = 'rgba(65, 102, 245, 0.3)';
+		this.accent = 'rgba(255, 255, 255, 0.3)';
 		this.provider = 'openai';
 		this.model = 'gpt-5-mini';
 		this.absPath = '';

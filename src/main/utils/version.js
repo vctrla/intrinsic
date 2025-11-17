@@ -1,6 +1,6 @@
 import { app, net } from 'electron';
 
-const OWNER = 'genbraham';
+const OWNER = 'vctrla';
 const REPO = 'intrinsic';
 const INCLUDE_PRERELEASES = false;
 
