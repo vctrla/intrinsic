@@ -18,9 +18,12 @@
 - Monte Carlo simulation with >=5 periods.
 - Support ETFs, Index Funds. If ticker starts with 'FUND.{ISIN}' -> fetch KID ->
   return basic info.
-- LLM options (Claude, Cloudflare, AWS Bedrock, Google AI, Groq, Deepseek,
-  Qwen... models within)
+- Add LLM options (Claude, Cloudflare, AWS Bedrock, Google AI, Groq, Deepseek,
+  Qwen...)
 - Local LLMs options: embed fine-tuned small LLM, llama-cpp, Ollama...
-- Local ML classifier for words arrays.
-- Fine-tune BERT NER model -> local inference.
+- Local NER fine-tuning:
+  - [Chunks classifier](./ner/ner-roadmap-1.md): extracts targeted chunks within
+    report (balance, income, cash flow).
+  - [Data extractor](./ner/ner-roadmap-2.md): extract financial data from each
+    section from chunk classifier.
 - Integrate Alpha Vantage API or ticker price scraper for live-pricing.
