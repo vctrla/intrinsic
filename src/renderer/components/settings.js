@@ -384,6 +384,12 @@ export class SettingsDialog extends LitElement {
 				`;
 
 			case 'userData':
+				const models = AI_STRUCTURED_MODELS[this.provider]?.models ?? [];
+				const selectedModel =
+					models.includes(this.model) && models.length
+						? this.model
+						: models[0] ?? '';
+
 				return html`
 					<section class="settings">
 						<div class="settings-fields">
@@ -398,9 +404,16 @@ export class SettingsDialog extends LitElement {
 							</label>
 
 							<label>
-								<select id="model" .value=${this.model}>
-									${(AI_STRUCTURED_MODELS[this.provider]?.models ?? []).map(
-										(model) => html`<option value=${model}>${model}</option>`
+								<select id="model">
+									${models.map(
+										(model) => html`
+											<option
+												value=${model}
+												?selected=${model === selectedModel}
+											>
+												${model}
+											</option>
+										`
 									)}
 								</select>
 							</label>

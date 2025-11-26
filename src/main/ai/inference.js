@@ -175,6 +175,8 @@ async function runAIPipe(c, cleanedChunk, target, period, template) {
 
 	const model = getUserData().model;
 
+	console.log(`Running AI pipe for ${target} using model ${model}`);
+
 	const cleanerResp = await c.responses.create({
 		model: model,
 		input: [

@@ -19,9 +19,9 @@ giving you a clear, data-driven view of businesses you’re evaluating.
 
 - Git.
 - Node.js.
-- OpenAI API key (enable GPT-5-mini). _(Intrinsic currently only supports
-  OpenAI’s GPT-5-mini. Support for additional providers and models is
-  planned.)_.
+- AI provider API key. Remember to enable the models you plan to use. For
+  example for OpenAI:
+  'https://platform.openai.com/settings/proj_{YOUR_PROJECT}/limits'.
 
 ### Install
 
